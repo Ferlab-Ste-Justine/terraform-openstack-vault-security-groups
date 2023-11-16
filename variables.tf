@@ -9,12 +9,14 @@ variable "load_balancer_group_name" {
   type        = string
 }
 
-variable "client_groups" {
-  description = "Id of vault client security groups"
-  type = list(object({
-    id = string
-    vault_access = bool
-  }))
+variable "load_balancer_tunnel_group_name" {
+  description = "Name for vault load balancer tunnel security group"
+  type        = string
+}
+
+variable "client_group_ids" {
+  description = "Id of client security groups"
+  type = list(string)
   default = []
 }
 

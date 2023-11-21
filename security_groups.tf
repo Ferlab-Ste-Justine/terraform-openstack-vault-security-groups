@@ -214,6 +214,15 @@ resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_
   remote_group_id   = each.value.remote
 }
 
+resource "openstack_networking_secgroup_rule_v2" "tunne_external_ssh_access" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 22
+  port_range_max    = 22
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
+}
 
 resource "openstack_networking_secgroup_rule_v2" "bastion_member_icmp_access_v4" {
   for_each          = { for idx, id in var.bastion_group_ids : idx => id }

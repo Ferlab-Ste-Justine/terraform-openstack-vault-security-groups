@@ -224,6 +224,17 @@ resource "openstack_networking_secgroup_rule_v2" "tunne_external_ssh_access" {
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
 }
 
+resource "openstack_networking_secgroup_rule_v2" "lb_ingress_http_external" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 4431
+  port_range_max    = 4431
+  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
+  remote_ip_prefix  = "0.0.0.0/0"
+}
+
+
 resource "openstack_networking_secgroup_rule_v2" "bastion_member_icmp_access_v4" {
   for_each          = { for idx, id in var.bastion_group_ids : idx => id }
   direction         = "ingress"
@@ -365,3 +376,4 @@ resource "openstack_networking_secgroup_rule_v2" "metrics_server_load_balancer_t
   remote_group_id   = each.value
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
 }
+

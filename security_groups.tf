@@ -200,30 +200,6 @@ resource "openstack_networking_secgroup_rule_v2" "clients_icmp_access_tunnel_v6"
 }
 
 //Allow port 22 and icmp traffic from the bastion
-resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_icmp_access_v4" {
-  for_each = {
-    for pair in setproduct(local.bastion_ssh_accessible_group_ids, var.bastion_group_ids) : "${pair[0]}-${pair[1]}" => { sg = pair[0], remote = pair[1] }
-  }
-
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "icmp"
-  security_group_id = each.value.sg
-  remote_group_id   = each.value.remote
-}
-
-resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_icmp_access_v6" {
-  for_each = {
-    for pair in setproduct(local.bastion_ssh_accessible_group_ids, var.bastion_group_ids) : "${pair[0]}-${pair[1]}" => { sg = pair[0], remote = pair[1] }
-  }
-
-  direction         = "ingress"
-  ethertype         = "IPv6"
-  protocol          = "ipv6-icmp"
-  security_group_id = each.value.sg
-  remote_group_id   = each.value.remote
-}
-
 resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_ssh_access" {
   for_each = {
     for pair in setproduct(local.bastion_ssh_accessible_group_ids, var.bastion_group_ids) : "${pair[0]}-${pair[1]}" => { sg = pair[0], remote = pair[1] }

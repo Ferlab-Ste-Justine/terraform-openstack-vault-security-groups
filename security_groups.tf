@@ -10,17 +10,10 @@ resource "openstack_networking_secgroup_v2" "vault_load_balancer" {
   delete_default_rules = true
 }
 
-resource "openstack_networking_secgroup_v2" "vault_load_balancer_tunnel" {
-  name                 = var.load_balancer_tunnel_group_name
-  description          = "Security group for vault tunneled load balancer"
-  delete_default_rules = true
-}
-
 locals {
   bastion_ssh_accessible_group_ids = [
     openstack_networking_secgroup_v2.vault_member.id,
-    openstack_networking_secgroup_v2.vault_load_balancer.id,
-    openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
+    openstack_networking_secgroup_v2.vault_load_balancer.id
   ]
 }
 
@@ -47,18 +40,6 @@ resource "openstack_networking_secgroup_rule_v2" "vault_load_balancer_outgoing_v
   direction         = "egress"
   ethertype         = "IPv6"
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "vault_load_balancer_tunnel_outgoing_v4" {
-  direction         = "egress"
-  ethertype         = "IPv4"
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "vault_load_balancer_tunnel_outgoing_v6" {
-  direction         = "egress"
-  ethertype         = "IPv6"
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
 }
 
 //Allow port 8200, 4443, icmp traffic from other members and load balancers
@@ -114,32 +95,6 @@ resource "openstack_networking_secgroup_rule_v2" "load_balancer_member_icmp_acce
   security_group_id = openstack_networking_secgroup_v2.vault_member.id
 }
 
-resource "openstack_networking_secgroup_rule_v2" "load_balancer_tunnel_member_vault_access" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 8200
-  port_range_max    = 8200
-  remote_group_id   = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-  security_group_id = openstack_networking_secgroup_v2.vault_member.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "load_balancer_tunnel_member_icmp_access_v4" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "icmp"
-  remote_group_id   = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-  security_group_id = openstack_networking_secgroup_v2.vault_member.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "load_balancer_tunnel_member_icmp_access_v6" {
-  direction         = "ingress"
-  ethertype         = "IPv6"
-  protocol          = "ipv6-icmp"
-  remote_group_id   = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-  security_group_id = openstack_networking_secgroup_v2.vault_member.id
-}
-
 //Allow vault and icmp traffic access on load balancers from the clients
 resource "openstack_networking_secgroup_rule_v2" "clients_vault_access" {
   for_each          = { for idx, id in var.client_group_ids : idx => id }
@@ -170,35 +125,6 @@ resource "openstack_networking_secgroup_rule_v2" "clients_icmp_access_v6" {
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer.id
 }
 
-resource "openstack_networking_secgroup_rule_v2" "clients_vault_access_tunnel" {
-  for_each          = { for idx, id in var.client_group_ids : idx => id }
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 8200
-  port_range_max    = 8200
-  remote_group_id   = each.value
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "clients_icmp_access_tunnel_v4" {
-  for_each          = { for idx, id in var.client_group_ids : idx => id }
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "icmp"
-  remote_group_id   = each.value
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "clients_icmp_access_tunnel_v6" {
-  for_each          = { for idx, id in var.client_group_ids : idx => id }
-  direction         = "ingress"
-  ethertype         = "IPv6"
-  protocol          = "ipv6-icmp"
-  remote_group_id   = each.value
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
 //Allow port 22 and icmp traffic from the bastion
 resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_ssh_access" {
   for_each = {
@@ -225,16 +151,6 @@ resource "openstack_networking_secgroup_rule_v2" "lb_ingress_http_external" {
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer.id
 }
 
-resource "openstack_networking_secgroup_rule_v2" "lb_tunnel_ingress_http_external" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 4431
-  port_range_max    = 4433
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-  remote_ip_prefix  = "0.0.0.0/0"
-}
-
 resource "openstack_networking_secgroup_rule_v2" "lb_ingress_https_external" {
   direction         = "ingress"
   ethertype         = "IPv4"
@@ -245,25 +161,6 @@ resource "openstack_networking_secgroup_rule_v2" "lb_ingress_https_external" {
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer.id
 }
 
-resource "openstack_networking_secgroup_rule_v2" "lb_tunnel_ingress_https_external" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 443
-  port_range_max    = 443
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "tunnel_external_ssh_access" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 22
-  port_range_max    = 22
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
 
 resource "openstack_networking_secgroup_rule_v2" "lb_icmp_external_v4" {
   direction         = "ingress"
@@ -271,22 +168,6 @@ resource "openstack_networking_secgroup_rule_v2" "lb_icmp_external_v4" {
   protocol          = "icmp"
   remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "lb_tunnel_icmp_external_v6" {
-  direction         = "ingress"
-  ethertype         = "IPv6"
-  protocol          = "ipv6-icmp"
-  remote_ip_prefix  = "::/0"
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "lb_tunnel_icmp_external_v4" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "icmp"
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "lb_icmp_external_v6" {
@@ -331,24 +212,6 @@ resource "openstack_networking_secgroup_rule_v2" "bastion_load_balancer_icmp_acc
   protocol          = "ipv6-icmp"
   remote_group_id   = each.value
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "bastion_load_balancer_tunnel_icmp_access_v4" {
-  for_each          = { for idx, id in var.bastion_group_ids : idx => id }
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "icmp"
-  remote_group_id   = each.value
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "bastion_load_balancer_tunnel_icmp_access_v6" {
-  for_each          = { for idx, id in var.bastion_group_ids : idx => id }
-  direction         = "ingress"
-  ethertype         = "IPv6"
-  protocol          = "ipv6-icmp"
-  remote_group_id   = each.value
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
 }
 
 //Allow port 9100 and icmp traffic from metrics server
@@ -409,33 +272,3 @@ resource "openstack_networking_secgroup_rule_v2" "metrics_server_load_balancer_i
   remote_group_id   = each.value
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer.id
 }
-
-resource "openstack_networking_secgroup_rule_v2" "metrics_server_load_balancer_tunnel_node_exporter_access" {
-  for_each          = { for idx, id in var.metrics_server_group_ids : idx => id }
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 9100
-  port_range_max    = 9100
-  remote_group_id   = each.value
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "metrics_server_load_balancer_tunnel_icmp_access_v4" {
-  for_each          = { for idx, id in var.metrics_server_group_ids : idx => id }
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "icmp"
-  remote_group_id   = each.value
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-
-resource "openstack_networking_secgroup_rule_v2" "metrics_server_load_balancer_tunnel_icmp_access_v6" {
-  for_each          = { for idx, id in var.metrics_server_group_ids : idx => id }
-  direction         = "ingress"
-  ethertype         = "IPv6"
-  protocol          = "ipv6-icmp"
-  remote_group_id   = each.value
-  security_group_id = openstack_networking_secgroup_v2.vault_load_balancer_tunnel.id
-}
-

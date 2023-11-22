@@ -9,11 +9,6 @@ variable "load_balancer_group_name" {
   type        = string
 }
 
-variable "load_balancer_tunnel_group_name" {
-  description = "Name for vault load balancer tunnel security group"
-  type        = string
-}
-
 variable "client_group_ids" {
   description = "Id of client security groups"
   type = list(string)

@@ -208,8 +208,8 @@ resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "icmp"
-  security_group_id = each.value.sg.id
-  remote_group_id   = each.value.remote.id
+  security_group_id = each.value.sg
+  remote_group_id   = each.value.remote
 }
 
 resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_icmp_access_v6" {
@@ -220,8 +220,8 @@ resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "ipv6-icmp"
-  security_group_id = each.value.sg.id
-  remote_group_id   = each.value.remote.id
+  security_group_id = each.value.sg
+  remote_group_id   = each.value.remote
 }
 
 resource "openstack_networking_secgroup_rule_v2" "bastion_ssh_accessible_groups_ssh_access" {

@@ -272,3 +272,15 @@ resource "openstack_networking_secgroup_rule_v2" "metrics_server_load_balancer_i
   remote_group_id   = each.value
   security_group_id = openstack_networking_secgroup_v2.vault_load_balancer.id
 }
+
+// Allow Prometheus metrics servers to access Vault telemetry on port 8200
+resource "openstack_networking_secgroup_rule_v2" "metrics_server_member_vault_telemetry_access" {
+  for_each          = { for idx, id in var.metrics_server_group_ids : idx => id }
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 8200
+  port_range_max    = 8200
+  remote_group_id   = each.value
+  security_group_id = openstack_networking_secgroup_v2.vault_member.id
+}
